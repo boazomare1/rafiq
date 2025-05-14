@@ -1,5 +1,5 @@
 import 'package:flutter/material.dart';
-import 'pages/home_page.dart';
+// import 'pages/home_page.dart';
 import 'pages/prayer_times_page.dart';
 import 'pages/settings_page.dart';
 import 'pages/duas_page.dart';
