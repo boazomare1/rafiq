@@ -27,13 +27,17 @@ Settings & More
 
 🔧 Getting Started
 Clone the repo
+
 git clone https://github.com/boazomare1/rafiq.git
+
 cd rafiq
 
 Install dependencies
+
 flutter pub get
 
 Run the app
+
 flutter run
 
 Note: You’ll need an internet connection to fetch prayer times and Qur’an data.
