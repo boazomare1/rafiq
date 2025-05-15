@@ -1,5 +1,7 @@
 import 'package:flutter/material.dart';
 import '../api/quran_api.dart';
+import 'package:salatul_tracker/services/surah_audio.dart';
+import 'package:just_audio/just_audio.dart'; // For audio playback
 
 class SurahDetailPage extends StatefulWidget {
   final int surahNumber;
@@ -17,9 +19,13 @@ class SurahDetailPage extends StatefulWidget {
 
 class _SurahDetailPageState extends State<SurahDetailPage> {
   final QuranApi _api = QuranApi();
+  final AudioPlayer _audioPlayer = AudioPlayer();
 
   late Future<List<Verse>> _versesFuture;
   bool _showTransliteration = true;
+
+  bool _isPlaying = false;
+  bool _isPaused = false;
 
   @override
   void initState() {
@@ -27,22 +33,49 @@ class _SurahDetailPageState extends State<SurahDetailPage> {
     _versesFuture = _loadAllEditions();
   }
 
+  Future<void> _handleAudioPlayback() async {
+    final url = surahAudioUrls[widget.surahNumber];
+
+    if (url == null) return;
+
+    if (!_isPlaying) {
+      try {
+        await _audioPlayer.setUrl(url);
+        await _audioPlayer.play();
+        setState(() {
+          _isPlaying = true;
+          _isPaused = false;
+        });
+      } catch (e) {
+        print("Audio error: $e");
+      }
+    } else if (_isPaused) {
+      await _audioPlayer.play();
+      setState(() {
+        _isPaused = false;
+      });
+    } else {
+      await _audioPlayer.pause();
+      setState(() {
+        _isPaused = true;
+      });
+    }
+  }
+
   Future<List<Verse>> _loadAllEditions() async {
-    // Fire off three API calls in parallel
     final arabicFut = _api.fetchSurahEdition(widget.surahNumber, 'ar.alafasy');
     final translationFut = _api.fetchSurahEdition(widget.surahNumber, 'en.asad');
     final translitFut = _api.fetchSurahEdition(widget.surahNumber, 'en.transliteration');
 
     final results = await Future.wait([arabicFut, translationFut, translitFut]);
-    final arabicData      = results[0];
+    final arabicData = results[0];
     final translationData = results[1];
-    final translitData    = results[2];
+    final translitData = results[2];
 
-    final List<dynamic> arabicAyahs      = arabicData['ayahs'];
+    final List<dynamic> arabicAyahs = arabicData['ayahs'];
     final List<dynamic> translationAyahs = translationData['ayahs'];
-    final List<dynamic> translitAyahs    = translitData['ayahs'];
+    final List<dynamic> translitAyahs = translitData['ayahs'];
 
-    // Zip them into Verse objects
     return List<Verse>.generate(arabicAyahs.length, (i) {
       return Verse(
         number: arabicAyahs[i]['numberInSurah'] as int,
@@ -54,18 +87,40 @@ class _SurahDetailPageState extends State<SurahDetailPage> {
   }
 
   @override
+  void dispose() {
+    _audioPlayer.dispose();
+    super.dispose();
+  }
+
+  @override
   Widget build(BuildContext context) {
     return Scaffold(
       appBar: AppBar(
         title: Text(widget.surahName),
         actions: [
-          // Toggle transliteration
           IconButton(
             icon: Icon(
-              _showTransliteration ? Icons.text_fields : Icons.text_rotation_none,
+              !_isPlaying
+                  ? Icons.play_arrow
+                  : _isPaused
+                      ? Icons.play_arrow
+                      : Icons.pause,
             ),
+            tooltip: !_isPlaying
+                ? 'Play Surah'
+                : _isPaused
+                    ? 'Resume'
+                    : 'Pause',
+            onPressed: _handleAudioPlayback,
+          ),
+          IconButton(
+            icon: Icon(_showTransliteration ? Icons.text_fields : Icons.text_rotation_none),
             tooltip: 'Toggle Transliteration',
-            onPressed: () => setState(() => _showTransliteration = !_showTransliteration),
+            onPressed: () {
+              setState(() {
+                _showTransliteration = !_showTransliteration;
+              });
+            },
           ),
         ],
       ),
@@ -91,7 +146,6 @@ class _SurahDetailPageState extends State<SurahDetailPage> {
                   child: Column(
                     crossAxisAlignment: CrossAxisAlignment.stretch,
                     children: [
-                      // Arabic
                       Text(
                         '${v.arabic}  ﴿${v.number}﴾',
                         textAlign: TextAlign.right,
@@ -102,7 +156,6 @@ class _SurahDetailPageState extends State<SurahDetailPage> {
                         ),
                       ),
                       SizedBox(height: 8),
-                      // Optional transliteration
                       if (_showTransliteration)
                         Text(
                           v.transliteration,
@@ -113,11 +166,7 @@ class _SurahDetailPageState extends State<SurahDetailPage> {
                           ),
                         ),
                       if (_showTransliteration) SizedBox(height: 8),
-                      // Translation
-                      Text(
-                        v.translation,
-                        style: TextStyle(fontSize: 16),
-                      ),
+                      Text(v.translation, style: TextStyle(fontSize: 16)),
                     ],
                   ),
                 ),
@@ -130,7 +179,6 @@ class _SurahDetailPageState extends State<SurahDetailPage> {
   }
 }
 
-/// Simple data class representing one verse with all three texts.
 class Verse {
   final int number;
   final String arabic;
