@@ -12,6 +12,9 @@ dependencies:
   hijri: ^3.0.0
   http: ^0.13.6
   google_fonts: ^4.0.4
+  just_audio: ^0.9.33
+  audio_service: ^0.18.0
+
 dev_dependencies:
   flutter_test:
     sdk: flutter
