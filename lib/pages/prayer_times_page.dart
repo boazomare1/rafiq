@@ -33,7 +33,7 @@ class _PrayerTimesPageState extends State<PrayerTimesPage> {
     'Fajr': {
       'Fard Rak‘ahs': '2',
       'Sunnah Mu’akkadah': '2 (before)',
-      'Recommended Sūrahs': ['Al-Ikhlāṣ', 'Al-Falaq'],
+      'Recommended Sūrahs': ['Al-Ikhlāṣ', 'Al Baqarah'],
     },
     'Dhuhr': {
       'Fard Rak‘ahs': '4',
